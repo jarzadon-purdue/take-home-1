@@ -1,23 +1,35 @@
+# Compiler and flags
+CC = gcc
 CFLAGS = -std=c99 -g -Wall -Wshadow --pedantic -Wvla -Werror
-GCC = gcc $(CFLAGS)
-EXEC = hw7
-OBJS = shuffle.o
 
-$(EXEC): $(OBJS)
-	$(GCC) $(OBJS) -o $(EXEC)
+# Files
+TARGET = flesch
+OBJS = main.o flesch.o
+INPUTS = $(wildcard inputs/input_*.txt)
+EXPECTED = $(INPUTS:inputs/input_%.txt=expected/expected_%.txt)
 
-test: $(EXEC)
-	./$(EXEC) 4 | sort > output4
-	diff -w output4 expected/expected4
-	./$(EXEC) 8 | sort > output8
-	diff -w output8 expected/expected8
-	./$(EXEC) 11 | sort > output11
-	diff -w output11 expected/expected11
+# Default target
+all: $(TARGET)
 
-%.o : %.c
-	$(GCC) -c $<
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET)
 
+main.o: main.c flesch.h
+	$(CC) $(CFLAGS) -c main.c
+
+flesch.o: flesch.c flesch.h
+	$(CC) $(CFLAGS) -c flesch.c
+
+# Run all 8 tests automatically
+test: $(TARGET)
+	@mkdir -p output
+	@for i in 1 2 3 4 5 6 7 8; do \
+		echo "Testing input_$$i.txt..."; \
+		./$(TARGET) inputs/input_$$i.txt > output/output_$$i.txt; \
+		diff output/output_$$i.txt expected/expected_$$i.txt && echo "  PASSED ✅" || echo "  FAILED ❌"; \
+	done
+
+# Clean up
 clean:
-	/bin/rm -f *.o
-	/bin/rm -f $(EXEC)
-	/bin/rm -f output* log*
+	rm -f $(TARGET) *.o
+	rm -rf output
